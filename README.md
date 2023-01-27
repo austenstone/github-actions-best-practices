@@ -9,7 +9,7 @@ Best practices to follow when using GitHub Actions.
 Use [VSCode](https://code.visualstudio.com/).
 
 ### Language/Syntax support
-Use Read Hat's [YAML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension which utilizes [schemastore.org](https://www.schemastore.org/json/). This will provide tons of features such as syntax highlighting and formatting.
+Use RedHat's [YAML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension which utilizes [schemastore.org](https://www.schemastore.org/json/). This will provide tons of features such as syntax highlighting and formatting.
 
 # Workflow Usage
 When writing workflows there are some things to keep in mind.
