@@ -1,23 +1,118 @@
-# GitHub Actions Best Practices
-Best practices to follow when using GitHub Actions.
+# The GitHub Actions Well-Architected Framework
 
-- [Security hardening for GitHub Actions](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
+## Introduction
 
-# Development
+The GitHub Actions Well-Architected Framework is a design framework that can improve the quality of a workload by helping it to:
 
-## IDE
+* Be resilient, available, and recoverable.
+* Be as secure as you need it to be.
+* Deliver a sufficient return on investment.
+* Support responsible development and operations.
+* Accomplish its purpose within acceptable timeframes.
+* The framework is founded on the five pillars of architectural excellence, which are mapped to those goals. They are: Reliability, Security, Cost Optimization, Operational Excellence, and Performance Efficiency.
+
+Each pillar provides recommended practices, risk considerations, and tradeoffs. The design decisions must be balanced across all pillars, given the business requirements. The technical and actionable guidance is broad enough for all workloads and applies to a specific scenario. This guidance is centered on GitHub Actions.
+
+Workload architecture isn't the same as its implementation. The Well-Architected Framework can set you up for success through architectural design, but the implementation choices depend on the business requirements and constraints of your organization.
+
+## Pillars
+
+The pillars dive into the five key areas of the Well-Architected Framework.
+
+### 1. Reliability
+
+
+
+### 2. Security
+
+#### [Security hardening for GitHub Actions](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
+
+### 3. Cost Optimization
+
+#### Jobs round up to the nearest minute
+
+When you run a job GitHub Actions spins up a new VM for the job to run on. The job is billed by the minute, and any fraction of a minute is rounded up to the nearest minute. For example, a job that runs for 61 seconds is billed for two minutes.
+
+#### [Caching dependencies to speed up workflows](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows)
+
+Caching dependencies can significantly reduce the time it takes to run a workflow. For example, if you're building a Node.js project, you can cache the `node_modules` directory to avoid reinstalling dependencies every time you run a workflow.
+
+#### [Set timeouts for workflows](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idtimeout-minutes)
+
+You can set a timeout for each [job](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idtimeout-minutes) or [step](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepstimeout-minutes) in a workflow to prevent it from running for longer than it should. If the timeout is reached, the job or step is cancelled.
+
+#### [Concurrency](https://docs.github.com/en/actions/using-jobs/using-concurrency)
+
+Use concurrency to ensure that only a single job or workflow using the same concurrency group can run at a time.
+
+```yml
+concurrency:
+  group: ${{ github.ref }}
+```
+
+You can also cancel a previous run when a new run is triggered.
+
+```yml
+  cancel-in-progress: true
+```
+
+#### Disable Actions
+
+You can always disable actions for a specific [repository](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#managing-github-actions-permissions-for-your-repository) or [workflow](https://docs.github.com/en/actions/using-workflows/disabling-and-enabling-a-workflow) if you're not using them. You can always re-enable them later.
+
+### 4. Deployment
+
+#### [Environments](https://docs.github.com/en/actions/using-jobs/using-environments-for-jobs)
+
+Environments allow you to specify a job as a deployment job. This allows you to better track deployments and enforce environment protection rules.
+
+##### [Environment protection rules](https://docs.github.com/en/enterprise-cloud@latest/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-protection-rules)
+
+
+### 4. Operational Excellence
+
+### 5. Performance Efficiency
+
+#### Conditional on changed files
+
+Sometimes you want to condition the jobs/steps that run based on what files changed in a push or pull request.
+
+##### [Path filtering](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onpushpull_requestpull_request_targetpathspaths-ignore)
+
+You can use `on.<push|pull_request|pull_request_target>.<paths|paths-ignore>` to trigger a workflow based on the files changed in a push or pull request.
+
+##### [tj-actions/changed-files](https://github.com/tj-actions/changed-files) and [dorny/paths-filter](https://github.com/dorny/paths-filter)
+
+These actions allows you to conditionally run jobs or steps based on the files changed in a pull request.
+
+### 6. Authoring
+
 Use [VSCode](https://code.visualstudio.com/).
 
-### Language/Syntax support
-Use Read Hat's [YAML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension which utilizes [schemastore.org](https://www.schemastore.org/json/). This will provide tons of features such as syntax highlighting and formatting.
+#### [GitHub Actions](https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-github-actions)
 
-# Workflow Usage
-When writing workflows there are some things to keep in mind.
+The GitHub Actions extension lets you manage your workflows, view the workflow run history, and helps with authoring workflows. It provides syntax highlighting, integrated documentation, validation, code completion, and more.
 
-## Reuse Workflows
-You should call workflows from other workflows to avoid duplication. Practice innersourcing to promote best practices and reuse welldesigned/tested workflows.
+#### [GitHub CLI](https://cli.github.com/)
 
-### Why?
+The GitHub CLI is preinstalled on all GitHub-hosted runners. It's a great utility both during actions runtime and even for local development.
+
+#### Running locally
+
+While there isn't really a way to run GitHub Actions locally, there are a few ways to test your workflows locally.
+
+##### Make your local machine as a [self-hosted runner](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/adding-self-hosted-runners)
+
+You can use your local machine as a self-hosted runner to test your workflows locally. You do need to specify the `runs-on` label as the one you set your machine to. You still need to trigger the workflow through GitHub.
+
+##### [Act](https://github.com/nektos/act)
+
+Act is a command-line tool that allows you to run your GitHub Actions locally.
+
+### 6. Scale and Reusability
+
+You should call workflows from other workflows to avoid duplication. Practice innersourcing to promote best practices and reuse well designed and tested workflows.
+
 - Easier to maintain
 - Create workflows more quickly
 - Avoid duplication. DRY(don't repeat yourself).
@@ -26,211 +121,52 @@ You should call workflows from other workflows to avoid duplication. Practice in
 - Promotes best practices
 - Abstract away complexity
 
-### Example
-#### Caller (reusable-caller.yml)
-```yml
-jobs:
-  build:
-    uses: ./.github/workflows/reusable-called.yml
-    with:
-      username: ${{ github.actor }}
-```
+#### Reusable workflows & Composite Actions
 
-#### Called (reusable-called.yml)
-```yml
-on:
-  workflow_call:
-    inputs:
-      username:
-        default: ${{ github.actor }}
-        required: false
-        type: string
+[Reusable Workflows](https://docs.github.com/en/actions/learn-github-actions/reusing-workflows) and [Composite Actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-run-steps-action) can help you reuse logic across multiple workflows.
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run a one-line script
-        run: echo Hello, ${{ inputs.username }}!
-```
+| Feature | [Reusable workflows](https://docs.github.com/en/actions/learn-github-actions/reusing-workflows) | [Composite Actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-run-steps-action) |
+|---------|--------------------|-------------------|
+| Definition | Reusable jobs | Reusable steps |
+| Nesting Depth | 3 layers | 10 layers |
+| Use of Secrets | Can use secrets from the caller workflow | Must be passed in as inputs |
+| Can specify the `runs on` label | Yes | No |
+| Can add additional steps to job | No | Yes |
+| call | `uses: <owner><repo>/.github/workflows/<workflow>.yml@<ref>` | `uses: <owner>/<repo><?/path>@<ref>` |
+| can be used in matrix strategy | Yes | Yes |
 
-## Set timeouts
-By default a job will be cancelled after 360 minutes or 6 hours. Consider setting a timeout to avoid running jobs for too long.
+#### [Repository rulesets](https://docs.github.com/en/enterprise-cloud@latest/organizations/managing-organization-settings/managing-rulesets-for-repositories-in-your-organization)
 
-### Why?
-Prevent jobs from hogging the GitHub Actions queue. There are usage limits that can cause other jobs to wait or perform poorly. See [Usage limits](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits).
+Using the new version of branch protection rules, repository rulesets, you can actually [require workflows to pass before merging](https://docs.github.com/en/enterprise-cloud@latest/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#require-workflows-to-pass-before-merging) a pull request for all(or some) of the repositories in your organization.
 
-A timeout can also help catch issues early.
+#### Keeping reusable workflows and actions up to date
 
-### Example
-[`jobs.<job_id>.timeout-minutes`](https://docs.github.com/en/enterprise-cloud@latest/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idtimeout-minutes)
+It's important that you can cleanly update your workflows across all repositories that use them but how do we know that something won't break?
 
-```yml
-jobs:
-  build:
-    timeout-minutes: 30
-    runs-on: ubuntu-latest
-    steps:
-      ...
-```
+##### Versioning
 
-## Limit Permissions
-The default [`${{ GITHUB_TOKEN }}`](https://docs.github.com/en/actions/security-guides/automatic-token-authentication) has access to most things. Consider limiting permissions.
+> [!WARNING]
+> Pinning to a branch such as `@main` is not a best practice because it can introduce breaking changes. It's recommended to pin to a specific version or use a version range.
 
-### Why?
-- Prevent accidental access to sensitive information
-- Avoid accidental use of destructive actions
+By versioning your actions and reusable workflows you can ensure that you can update them in a controlled manner. This allows you to test the changes in a single repository before rolling them out to all repositories that use them.
 
-### Example
-[`permissions`](https://docs.github.com/en/enterprise-cloud@latest/actions/using-workflows/workflow-syntax-for-github-actions#permissions)
-#### Permission types
-```yml
-permissions:
-  actions: read|write|none
-  checks: read|write|none
-  contents: read|write|none
-  deployments: read|write|none
-  id-token: read|write|none
-  issues: read|write|none
-  discussions: read|write|none
-  packages: read|write|none
-  pages: read|write|none
-  pull-requests: read|write|none
-  repository-projects: read|write|none
-  security-events: read|write|none
-  statuses: read|write|none
-```
+###### [Dependabot](https://docs.github.com/en/code-security/supply-chain-security/keeping-your-dependencies-updated-automatically/about-dependabot-version-updates)
 
-#### Permission all
-```yml
-permissions: read-all|write-all
-```
+Dependabot supports GitHub Actions as a package manager. It can automatically create pull requests to update your workflows when new versions of actions are released. By introducing changes through PRs you can ensure that the changes are reviewed before merging and don't cause any issues.
 
-#### No permissions
-```yml
-permissions: {}
-```
+#### [Starter workflows](https://docs.github.com/en/actions/using-workflows/creating-starter-workflows-for-your-organization)
 
-## Consider if (third-party) actions are really needed
-Actions on the marketplace are written by third-party developers. You should careful consider if you need to use an action. GitHub grants the [verified creator badge](https://docs.github.com/en/developers/github-marketplace/github-marketplace-overview/about-marketplace-badges#for-github-actions) to creators who are [partner organizations](https://partner.github.com/).
+> [!NOTE]  
+> Starter workflows require a public .github repository, they are not available for private repositories.
 
-### Why?
+Starter workflows are a great way to provide pre-written workflows to your users.
 
-Third-party actions could break your devops pipeline or even perform malicious actions if precausion is not taken.
+#### [Repository templates](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-template-repository)
 
-### Example
-#### Bad
-```yml
-jobs:
-  print:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: phwes/simple_hello_world@v1
-```
-#### Good
-```yml
-jobs:
-  print:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Hello World"
-```
+Repository templates allow you to create a repository that can be used as a template for new repositories. This template can include workflows, actions, and other files that you want to be included in new repositories.
 
-### References
-- [Actions Verified ✅](https://github.com/marketplace?type=actions&verification=verified_creator)
-- [Actions Published by GitHub 😸](https://github.com/marketplace?type=actions&query=publisher%3Agithub+publisher%3Aactions)
-- [Keeping your GitHub Actions and workflows secure Part 1: Preventing pwn requests](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/)
-- [Keeping your GitHub Actions and workflows secure Part 2: Untrusted input](https://securitylab.github.com/research/github-actions-untrusted-input/)
-- [Keeping your GitHub Actions and workflows secure Part 3: How to trust your building blocks](https://securitylab.github.com/research/github-actions-building-blocks/)
+#### [Sharing secrets and variables within an organization](https://docs.github.com/en/actions/using-workflows/sharing-workflows-secrets-and-runners-with-your-organization#sharing-secrets-and-variables-within-an-organization)
 
-## Pin actions to SHAs
-Pin actions to SHAs to ensure that the action is always the same. Consider pinning to the SHA of a tested release.
+## Conclusion
 
-### Why?
-Authors can overwrite branches and tags to point at malicious or breaking code. A SHA is entirely unique and can be used to pin an action to a specific version.
-
-### Example
-#### Bad
-```yml
-      - uses: phwes/simple_hello_world@main
-```
-#### Good
-```yml
-      - uses: phwes/simple_hello_world@12d9258754d937b3d2500da69bf531924eaa567a
-```
-
-## Consider using concurrency
-You can use `jobs.<job_id>.concurrency` to ensure that only one job is running at a time. The parameter `cancel-in-progress` will also cancel any other jobs in the same concurrency group.
-
-### Why?
-You only want one deployment to run at a time and you always want to deploy the latest code. Also you sometimes don't need to run CI on intermediate commits when newer code has been pushed. Any use case that requires a mutex is a good candidate for concurrency.
-
-### Example
-```yml
-concurrency: 
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-```
-
-### Refernces
-- [Using concurrency](https://docs.github.com/en/actions/using-jobs/using-concurrency)
-
-## Keep Secrets as Environment Variables
-To help protect secrets, consider using environment variables, STDIN, or other mechanisms supported by the target process.
-
-### Why?
-Command-line processes may be visible to other users (using the ps command) or captured by security audit events.
-
-### Example
-#### Bad
-```yml
-steps:
-  - name: Run a one-line script
-    run: echo Hello, ${{ secret.name }}!
-```
-
-#### Good
-```yml
-steps:
-  - name: Run a one-line script
-    env:
-      NAME: ${{ secret.name }}
-    run: echo Hello, $NAME!
-```
-### References
-[Using encrypted secrets in a workflow](https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow)
-
-## Prefer using OIDC Connect
-Consider using OIDC Connect to interact with the cloud.
-
-### Why?
-Long-lived credentials are insecure and OIDC Connect allows the use of short-lived access tokens.
-
-### References
-- [Security hardening your deployments](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments)
-- [Configuring OpenID Connect in cloud providers](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-cloud-providers)
-- [Using OpenID Connect with reusable workflows](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/using-openid-connect-with-reusable-workflows)
-
-## Careful with `pull_request_target` event trigger
-You can check out external PRs when using the [`pull_request_target`](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target) event trigger. This means you are giving write access and secret access to untrusted code. This could compromise your entire repository and any resources connected to Actions.
-
-### Example
-#### Bad
-> **Warning**
-> We are checking out code on the target repo and executing code from the pull request.
-```yml
-name: my action
-on: pull_request_target
-
-jobs:
-  pr-check: 
-    name: Check PR
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup Action
-        uses: actions/checkout@v3
-        with:
-          ref: ${{github.event.pull_request.head.ref}}
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-      ... execute code from the pull request ...
-```
+Summarize the key points of the framework and its benefits.
